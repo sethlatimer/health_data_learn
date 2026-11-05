@@ -34,23 +34,14 @@ def embed_texts(texts, embedding_model="nomic-local", batch_size=32):
 
     texts = list(texts)
     embeddings = []
-    for offset in range(0, len(texts), batch_size):
-        batch = texts[offset:offset + batch_size]
-        response = requests.post(
-            OLLAMA_EMBED_URL,
-            json={
-                "model": embedding_model,
-                "prompt": batch,
-            },
-            timeout=300,
-        )
-        response.raise_for_status()
-        batch_embeddings = response.json()["embeddings"]
-        if len(batch_embeddings) != len(batch):
-            raise ValueError(
-                "Embedding response count does not match the input batch"
-            )
-        embeddings.extend(batch_embeddings)
+    
+    # Process texts in batches
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i:i + batch_size]
+        # Make sequential requests for each text in the batch
+        for text in batch:
+            embedding = embed_text(text, embedding_model)
+            embeddings.append(embedding)
 
     return embeddings
 
