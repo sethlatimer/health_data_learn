@@ -46,7 +46,7 @@ def chat():
 def index_corpus():
     try:
         report = agent.index_folder(
-            r"C:\Temp\corpus"
+            "/var/home/seth/health_data_learn/corpus"
         )
 
         return jsonify(report)
