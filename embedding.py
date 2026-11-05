@@ -12,7 +12,7 @@ from database import (
 )
 
 
-OLLAMA_EMBED_URL = "http://localhost:11434/api/embeddings"
+OLLAMA_EMBED_URL = "http://localhost:11434/api/embed"
 
 
 def embed_text(text, embedding_model="nomic-embed-text"):
@@ -20,12 +20,12 @@ def embed_text(text, embedding_model="nomic-embed-text"):
         OLLAMA_EMBED_URL,
         json={
             "model": embedding_model,
-            "prompt": text,
+            "input": text,
         },
         timeout=300,
     )
     response.raise_for_status()
-    return response.json()["embedding"]
+    return response.json()["embeddings"][0]
 
 
 def embed_texts(texts, embedding_model="nomic-embed-text", batch_size=32):
