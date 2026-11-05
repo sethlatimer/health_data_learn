@@ -14,7 +14,7 @@ from database import get_recent_messages, save_message
 from evidence_synthesis import build_evidence_package
 
 
-OLLAMA_URL = "http://localhost:11434/v1/chat/completions"
+OLLAMA_URL = "http://localhost:11434/api/generate"
 ROUTES = {
     "general_chat",
     "document_search",
@@ -68,27 +68,23 @@ class Agent:
             OLLAMA_URL,
             json={
                 "model": self.model,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": (
-                            "Resolve only the ambiguities in the user's data request. "
-                            "Choose the best matching intent from the allowed JSON "
-                            "values; use null when the user has not specified it. "
-                            "Do not select datasets or codes, and do not answer the "
-                            "question. Return only the JSON object.\n\n"
-                            f"Ambiguous fields: {', '.join(properties)}\n"
-                            f"User request: {question}"
-                        ),
-                    }
-                ],
-                "response_format": {"type": "json_object"},
+                "prompt": (
+                    "Resolve only the ambiguities in the user's data request. "
+                    "Choose the best matching intent from the allowed JSON "
+                    "values; use null when the user has not specified it. "
+                    "Do not select datasets or codes, and do not answer the "
+                    "question. Return only the JSON object.\n\n"
+                    f"Ambiguous fields: {', '.join(properties)}\n"
+                    f"User request: {question}"
+                ),
+                "format": schema,
                 "stream": False,
+                "think": False,
             },
             timeout=60,
         )
         response.raise_for_status()
-        content = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+        content = response.json().get("response", "")
         try:
             resolution = json.loads(content)
         except (TypeError, json.JSONDecodeError) as error:
@@ -199,28 +195,24 @@ class Agent:
             OLLAMA_URL,
             json={
                 "model": self.model,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": (
-                            "Classify the user's request into exactly one route. "
-                            "Use document_search for questions answered from the "
-                            "local indexed documents, oecd_discovery for finding "
-                            "OECD datasets or measures, oecd_analysis for questions "
-                            "asking for OECD observations or quantitative trends, "
-                            "and general_chat otherwise. Return only the JSON object "
-                            "matching the supplied schema. Do not answer the request.\n\n"
-                            f"USER REQUEST:\n{question}"
-                        ),
-                    }
-                ],
-                "response_format": {"type": "json_object"},
+                "prompt": (
+                    "Classify the user's request into exactly one route. "
+                    "Use document_search for questions answered from the "
+                    "local indexed documents, oecd_discovery for finding "
+                    "OECD datasets or measures, oecd_analysis for questions "
+                    "asking for OECD observations or quantitative trends, "
+                    "and general_chat otherwise. Return only the JSON object "
+                    "matching the supplied schema. Do not answer the request.\n\n"
+                    f"USER REQUEST:\n{question}"
+                ),
+                "format": schema,
                 "stream": False,
+                "think": False,
             },
             timeout=60,
         )
         response.raise_for_status()
-        content = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+        content = response.json().get("response", "")
         try:
             routing = json.loads(content)
         except (TypeError, json.JSONDecodeError) as error:
@@ -290,18 +282,14 @@ class Agent:
             OLLAMA_URL,
             json={
                 "model": self.model,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt,
-                    }
-                ],
+                "prompt": prompt,
                 "stream": False,
+                "think": False,
             },
             timeout=300,
         )
         response.raise_for_status()
-        answer = response.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+        answer = response.json()["response"].strip()
 
         save_message("user", question)
         save_message("assistant", answer)
@@ -790,18 +778,14 @@ class Agent:
             OLLAMA_URL,
             json={
                 "model": self.model,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt,
-                    }
-                ],
+                "prompt": prompt,
                 "stream": False,
+                "think": False,
             },
             timeout=300,
         )
         response.raise_for_status()
-        return response.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+        return response.json()["response"].strip()
 
     def ask_oecd_analysis(self, question):
         try:
@@ -901,18 +885,14 @@ class Agent:
             OLLAMA_URL,
             json={
                 "model": self.model,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": full_prompt,
-                    }
-                ],
+                "prompt": full_prompt,
                 "stream": False,
+                "think": False,
             },
             timeout=300,
         )
         response.raise_for_status()
-        answer = response.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+        answer = response.json()["response"].strip()
         save_message("assistant", answer)
         return answer
 
@@ -956,18 +936,14 @@ class Agent:
             OLLAMA_URL,
             json={
                 "model": self.model,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": full_prompt,
-                    }
-                ],
+                "prompt": full_prompt,
                 "stream": False,
+                "think": False,
             },
             timeout=300,
         )
         response.raise_for_status()
-        answer = response.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+        answer = response.json()["response"].strip()
         save_message("assistant", answer)
         return answer
 
