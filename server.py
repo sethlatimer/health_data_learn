@@ -30,10 +30,11 @@ def chat():
         
         # If it's already a structured response (like from OECD analysis), return as-is
         if isinstance(evidence_package, dict) and "route" in evidence_package:
+            # This is already a structured response with route information
             return jsonify(evidence_package)
         
-        # Otherwise, we need to process the evidence package into a proper response
-        # For now, just return the answer directly for backward compatibility
+        # Otherwise, wrap the simple string answer in a structured format
+        # for backward compatibility
         return jsonify({"answer": evidence_package})
         
     except Exception as error:
