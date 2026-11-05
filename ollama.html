@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Agent</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        #chat {
+            border: 1px solid #ccc;
+            height: 600px;
+            overflow-y: auto;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        /* ── message cards ── */
+        .msg-card {
+            padding: 0;
+            border-radius: 8px;
+            margin-top: 14px;
+            overflow: visible;
+        }
+
+        .msg-card .msg-label {
+            display: block;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: .06em;
+            padding: 3px 12px 2px;
+            text-transform: uppercase;
+        }
+
+        .msg-card .msg-body {
+            white-space: pre-wrap;
+            word-break: break-word;
+            line-height: 1.45;
+            padding: 8px 14px 10px;
+        }
+
+        /* user – right-aligned, blue-tinted */
+        .msg-card.user {
+            background: #e7f0fb;
+            border: 1px solid #b6d0ee;
+            align-self: flex-end;
+        }
+        .msg-card.user .msg-label {
+            color: #2a6cb8;
+            background: #d2e3f6;
+        }
+        .msg-card.user .msg-body {
+            color: #174066;
+        }
+
+        /* assistant – left-aligned, neutral */
+        .msg-card.assistant {
+            background: #f5f6f8;
+            border: 1px solid #dde0e4;
+        }
+        .msg-card.assistant .msg-label {
+            color: #555;
+            background: #eceef1;
+        }
+        .msg-card.assistant .msg-body {
+            color: #222;
+        }
+
+        /* alignment wrapper for flex chat */
+        #chat {
+            display: flex;
+            flex-direction: column;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 8px 16px;
+        }
+
+        .analysis-card {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px 14px;
+            margin-top: 10px;
+        }
+
+        .analysis-card h3 {
+            margin: 0 0 8px;
+            font-size: 15px;
+        }
+
+        .metric-row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 6px;
+        }
+
+        .metric-card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 8px 12px;
+            min-width: 130px;
+        }
+
+        .metric-card .label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .metric-card .value {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+
+        details.details-section {
+            margin-top: 8px;
+            border-top: 1px solid #e0e0e0;
+            padding-top: 6px;
+        }
+
+        details.details-section summary {
+            cursor: pointer;
+            font-size: 13px;
+            color: #337ab7;
+        }
+
+        details.details-section pre {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 8px;
+            margin: 6px 0 0;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        details.details-section .detail-rows {
+            margin: 6px 0 0;
+            font-size: 13px;
+        }
+
+        details.details-section .detail-row {
+            display: flex;
+            gap: 8px;
+            padding: 2px 0;
+        }
+
+        details.details-section .detail-key {
+            color: #555;
+            min-width: 140px;
+            flex-shrink: 0;
+        }
+
+        details.details-section .detail-val {
+            color: #222;
+            word-break: break-word;
+        }
+
+        .chart-container {
+            margin-top: 12px;
+        }
+
+        .chart-container svg text {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            fill: #666;
+        }
+
+        .chart-container svg line.grid {
+            stroke: #e8e8e8;
+            stroke-width: 0.7;
+        }
+
+        .chart-container svg line.axis {
+            stroke: #999;
+            stroke-width: 1;
+        }
+
+        .chart-container svg line.timeline {
+            stroke: #2a74b2;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        .chart-container svg circle.point {
+            fill: #2a74b2;
+            stroke: #fff;
+            stroke-width: 1.5;
+        }
+
+        .chart-container svg text.value-label {
+            font-size: 9px;
+            fill: #2a74b2;
+            text-anchor: middle;
+        }
+
+        .chart-container svg text.period-label {
+            font-size: 10px;
+            fill: #666;
+            text-anchor: middle;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>Local VBC AI</h2>
+
+<div id="chat"></div>
+
+<textarea id="prompt"></textarea>
+
+<br>
+
+<button onclick="indexCorpus()" id="indexButton">
+    Index New PDFs
+</button>
+
+<span id="indexStatus"></span>
+
+<button onclick="sendMessage()">Send</button>
+
+
+
+
+
+
+
+<script>
+
+const API_BASE_URL =
+    window.location.protocol === "file:"
+        ? "http://127.0.0.1:5000"
+        : "";
+
+async function readJsonResponse(response) {
+    const contentType =
+        response.headers.get("content-type") || "";
+
+    if (!contentType.includes("application/json")) {
+        const body = await response.text();
+        throw new Error(
+            body.trim() || `Request failed (${response.status})`
+        );
+    }
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(
+            data.error || `Request failed (${response.status})`
+        );
+    }
+
+    return data;
+}
+
+async function indexCorpus() {
+
+    const button =
+        document.getElementById("indexButton");
+
+    const status =
+        document.getElementById("indexStatus");
+
+    button.disabled = true;
+
+    status.textContent =
+        " Scanning and indexing...";
+
+    try {
+
+        const response = await fetch(
+            `${API_BASE_URL}/index`,
+            {
+                method: "POST"
+            }
+        );
+
+        const data = await readJsonResponse(response);
+
+        const indexed =
+            data.indexed?.length || 0;
+
+        const skipped =
+            data.skipped?.length || 0;
+
+        const failed =
+            data.failed?.length || 0;
+
+        status.textContent =
+            ` Added ${indexed}, skipped ${skipped}, failed ${failed}`;
+
+        console.log(
+            "Index report:",
+            data
+        );
+
+    }
+    catch (error) {
+
+        status.textContent =
+            " Oops " + error.message;
+
+        console.error(error);
+
+    }
+    finally {
+
+        button.disabled = false;
+
+    }
+}
+
+
+
+const chat = document.getElementById("chat");
+
+function addMessage(role, text) {
+
+    const div = document.createElement("div");
+
+    div.className = "msg-card " + role;
+
+    // small label bar
+    const lbl = document.createElement("span");
+    lbl.className = "msg-label";
+    lbl.textContent = role === "user" ? "YOU" : "ASSISTANT";
+    div.appendChild(lbl);
+
+    // message body
+    const body = document.createElement("span");
+    body.className = "msg-body";
+    body.textContent = text;
+    div.appendChild(body);
+
+    chat.appendChild(div);
+
+    chat.scrollTop = chat.scrollHeight;
+}
+
+async function renderLineChart(container, observations) {
+    // Extract valid {TIME_PERIOD, OBS_VALUE} pairs and sort by period
+    var pts = [];
+    for (var i = 0; i < observations.length; i++) {
+        var p = observations[i].TIME_PERIOD;
+        var v = parseFloat(observations[i].OBS_VALUE);
+        if (p != null && !isNaN(v)) {
+            pts.push({ period: String(p), value: v });
+        }
+    }
+    if (pts.length < 2) return;
+    pts.sort(function(a, b) { return Number(a.period) - Number(b.period); });
+
+    // Chart dimensions — widened to prevent x-label clipping; more bottom pad for readability
+    var W = 560, H = 210;
+    var padL = 55, padR = 36, padT = 14, padB = 48;
+    var chartW = W - padL - padR;
+    var chartH = H - padT - padB;
+
+    // Data ranges
+    var minV = Infinity, maxV = -Infinity;
+    for (var i = 0; i < pts.length; i++) {
+        if (pts[i].value < minV) minV = pts[i].value;
+        if (pts[i].value > maxV) maxV = pts[i].value;
+    }
+    // Add 8% vertical padding so points aren't on edges
+    var rangeV = maxV - minV || 1;
+    minV -= rangeV * 0.08;
+    maxV += rangeV * 0.08;
+
+    function xPos(i) { return padL + Math.round(i / (pts.length - 1) * chartW); }
+    function yPos(v) { return Math.round(padT + (1 - (v - minV) / (maxV - minV)) * chartH); }
+
+    var svgNS = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("width", W);
+    svg.setAttribute("height", H);
+    svg.setAttribute("class", "chart-container");
+    svg.style.display = "block";
+    svg.setAttribute("overflow", "visible");  // prevent x-label clipping at edges
+
+    // Grid lines on Y axis (5 evenly spaced ticks)
+    var numGrid = 4;
+    for (var g = 0; g <= numGrid; g++) {
+        var gv = minV + (g / numGrid) * (maxV - minV);
+        var y = yPos(gv);
+        var gridLine = document.createElementNS(svgNS, "line");
+        gridLine.setAttribute("x1", padL);
+        gridLine.setAttribute("y1", y);
+        gridLine.setAttribute("x2", W - padR);
+        gridLine.setAttribute("y2", y);
+        gridLine.setAttribute("class", "grid");
+        svg.appendChild(gridLine);
+
+        // Y-axis label
+        var lbl = document.createElementNS(svgNS, "text");
+        lbl.setAttribute("x", padL - 6);
+        lbl.setAttribute("y", y + 4);
+        lbl.setAttribute("text-anchor", "end");
+        lbl.textContent = gv.toFixed(gv % 1 === 0 ? 0 : 2);
+        svg.appendChild(lbl);
+    }
+
+    // X axis line at bottom of chart area
+    var xBotLine = document.createElementNS(svgNS, "line");
+    xBotLine.setAttribute("x1", padL);
+    xBotLine.setAttribute("y1", yPos(minV));
+    xBotLine.setAttribute("x2", W - padR);
+    xBotLine.setAttribute("y2", yPos(minV));
+    xBotLine.setAttribute("class", "axis");
+    svg.appendChild(xBotLine);
+
+    // X-axis labels (every point, or spaced if many)
+    for (var j = 0; j < pts.length; j++) {
+        var x = xPos(j);
+        var yBase = yPos(minV);
+        var lbl = document.createElementNS(svgNS, "text");
+        lbl.setAttribute("x", x);
+        lbl.setAttribute("y", yBase + 18);
+        lbl.setAttribute("class", "period-label");
+        lbl.textContent = pts[j].period;
+        svg.appendChild(lbl);
+
+        // Vertical minor grid line
+        if (j < pts.length - 1) {
+            var vLine = document.createElementNS(svgNS, "line");
+            vLine.setAttribute("x1", x);
+            vLine.setAttribute("y1", padT);
+            vLine.setAttribute("x2", x);
+            vLine.setAttribute("y2", yPos(minV));
+            vLine.setAttribute("class", "grid");
+            svg.appendChild(vLine);
+        }
+    }
+
+    // Line path (polyline segments)
+    var points = [];
+    for (var k = 0; k < pts.length; k++) {
+        points.push(xPos(k) + "," + yPos(pts[k].value));
+    }
+    var lineEl = document.createElementNS(svgNS, "polyline");
+    lineEl.setAttribute("points", points.join(" "));
+    lineEl.setAttribute("fill", "none");          // must be SVG attr to prevent polygon fill
+    lineEl.setAttribute("class", "timeline");
+    svg.appendChild(lineEl);
+
+    // Data points and value labels
+    for (var m = 0; m < pts.length; m++) {
+        var cx = xPos(m);
+        var cy = yPos(pts[m].value);
+
+        var dot = document.createElementNS(svgNS, "circle");
+        dot.setAttribute("cx", cx);
+        dot.setAttribute("cy", cy);
+        dot.setAttribute("r", 4);
+        dot.setAttribute("class", "point");
+        svg.appendChild(dot);
+
+        // Value label above point — push farther out to avoid overlap
+        if (pts.length <= 12) {
+            var vLbl = document.createElementNS(svgNS, "text");
+            vLbl.setAttribute("x", cx);
+            vLbl.setAttribute("y", cy - 14);
+            vLbl.setAttribute("class", "value-label");
+            vLbl.textContent = pts[m].value.toFixed(1);
+            svg.appendChild(vLbl);
+        }
+    }
+
+    container.appendChild(svg);
+}
+
+
+async function renderAnalysisCard(container, data) {
+    const card = document.createElement("div");
+    card.className = "analysis-card";
+
+    const stats = data.statistics || {};
+    const measure = data.measure || {};
+    const request = data.request || {};
+    const filters = data.filters || {};
+    const provenance = data.provenance || {};
+
+    function field(label, value) {
+        if (value == null || String(value).trim() === "") return "";
+        return '<div class="metric-card"><div class="label">' + label + '</div><div class="value">' + formatValue(value) + '</div></div>';
+    }
+
+    function formatValue(v) {
+        if (typeof v === "number") {
+            if (Number.isInteger(v)) return String(v);
+            return v.toFixed(2);
+        }
+        return String(v);
+    }
+
+    var geography = "";
+    var refArea = filters.REF_AREA || filters.ref_area || null;
+    if (refArea && typeof refArea === "object") geography = refArea.label || refArea.code || "";
+    else if (refArea) geography = String(refArea);
+
+    var html = '<h3>OECD Analysis</h3>';
+    if (geography) html += '<div style="margin-bottom:6px;font-size:13px;color:#555;">' + escapeHtml(geography) + '</div>';
+
+    var metricRow = document.createElement("div");
+    metricRow.className = "metric-row";
+
+    var firstPeriod = stats.first_period;
+    var firstValue  = stats.first_value;
+    if (firstValue != null) {
+        metricRow.innerHTML += '<div class="metric-card"><div class="label">First</div><div class="value">' + formatValue(firstValue) + ' (' + escapeHtml(String(firstPeriod || "")) + ')</div></div>';
+    }
+
+    var lastPeriod = stats.last_period;
+    var lastValue  = stats.last_value;
+    if (lastValue != null) {
+        metricRow.innerHTML += '<div class="metric-card"><div class="label">Last</div><div class="value">' + formatValue(lastValue) + ' (' + escapeHtml(String(lastPeriod || "")) + ')</div></div>';
+    }
+
+    var absChange = stats.absolute_change;
+    if (absChange != null && String(absChange).trim() !== "") {
+        metricRow.innerHTML += '<div class="metric-card"><div class="label">Absolute Change</div><div class="value">' + formatValue(absChange) + '</div></div>';
+    }
+
+    var pctChange = stats.percent_change;
+    if (pctChange != null && String(pctChange).trim() !== "") {
+        // Format to exactly 2 decimal places (display only — values unchanged)
+        var pctNum = parseFloat(pctChange);
+        var pctStr = isNaN(pctNum) ? String(pctChange) : pctNum.toFixed(2);
+        var pctLabel = escapeHtml(pctStr) + '%';
+        if (pctNum >= 0) {
+            pctLabel = '+' + pctLabel;
+        }
+        metricRow.innerHTML += '<div class="metric-card"><div class="label">Percent Change</div><div class="value">' + pctLabel + '</div></div>';
+    }
+
+    card.appendChild(metricRow);
+
+    // Render time-series line chart from observations (after metric cards)
+    var observations = data.observations || [];
+    if (observations && observations.length >= 2) {
+        renderLineChart(card, observations);
+    }
+
+    var meanVal = stats.mean;
+    if (meanVal != null && String(meanVal).trim() !== "") {
+        var meanDiv = document.createElement("div");
+        meanDiv.style.marginTop = "6px";
+        meanDiv.style.fontSize = "13px";
+        meanDiv.innerHTML = '<strong>Mean:</strong> ' + formatValue(meanVal);
+        card.appendChild(meanDiv);
+    }
+
+    var measureLabel = measure.label || "";
+    var measureCode  = measure.code || "";
+    if (measureLabel || measureCode) {
+        var mDiv = document.createElement("div");
+        mDiv.style.marginTop = "6px";
+        mDiv.style.fontSize = "13px";
+        mDiv.innerHTML = '<strong>Measure:</strong> ' + escapeHtml(measureLabel) + (measureCode ? ' (' + escapeHtml(measureCode) + ')' : '');
+        card.appendChild(mDiv);
+    }
+
+    var detDetails = document.createElement("details");
+    detDetails.className = "details-section";
+    var detSummary = document.createElement("summary");
+    detSummary.textContent = "Analysis details";
+    detDetails.appendChild(detSummary);
+    var detData = {
+        dataset_title: provenance.dataset_title || null,
+        dataset_id: request.dataset_id || null,
+        measure_code: measureCode || null,
+        measure_label: measureLabel || null,
+        filters: Object.keys(filters).length > 0 ? filters : null,
+        requested_period: { start: request.start_period, end: request.end_period }
+    };
+
+    var rowsDiv = document.createElement("div");
+    rowsDiv.className = "detail-rows";
+
+    function addDetailRow(label, value) {
+        if (value == null || String(value).trim() === "") return;
+        var row = document.createElement("div");
+        row.className = "detail-row";
+        row.innerHTML = '<span class="detail-key">' + escapeHtml(label) + '</span><span class="detail-val">' + escapeHtml(String(value)) + '</span>';
+        rowsDiv.appendChild(row);
+    }
+
+    addDetailRow("Dataset title", detData.dataset_title);
+    addDetailRow("Dataset ID", detData.dataset_id);
+    addDetailRow("Measure label", detData.measure_label);
+    addDetailRow("Measure code", detData.measure_code);
+    addDetailRow("Geography", geography);
+
+    if (detData.filters && typeof detData.filters === "object") {
+        for (var fKey in detData.filters) {
+            var fVal = detData.filters[fKey];
+            var fLabel = fKey;
+            var fDisplay = String(fVal);
+            if (fVal != null && typeof fVal === "object") {
+                fLabel = fVal.label || fKey;
+                fDisplay = fVal.code || fVal.label || fKey;
+            }
+            addDetailRow(fLabel, fDisplay);
+        }
+    }
+
+    var periodStart = detData.requested_period.start;
+    var periodEnd   = detData.requested_period.end;
+    if (periodStart || periodEnd) {
+        addDetailRow("Requested period",
+            (periodStart ? String(periodStart) : "") + "–" + (periodEnd ? String(periodEnd) : ""));
+    }
+
+    detDetails.appendChild(rowsDiv);
+    card.appendChild(detDetails);
+
+    container.appendChild(card);
+
+    chat.scrollTop = chat.scrollHeight;
+}
+
+function escapeHtml(str) {
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+async function sendMessage() {
+
+    const promptBox =
+        document.getElementById("prompt");
+
+    const prompt =
+        promptBox.value.trim();
+
+    if (!prompt)
+        return;
+
+    addMessage("user", prompt);
+
+    promptBox.value = "";
+
+    const assistantDiv =
+        document.createElement("div");
+
+    assistantDiv.className =
+        "msg-card assistant";
+
+    // label
+    const aLbl = document.createElement("span");
+    aLbl.className = "msg-label";
+    aLbl.textContent = "ASSISTANT";
+    assistantDiv.appendChild(aLbl);
+
+    // body placeholder
+    const aBody = document.createElement("span");
+    aBody.className = "msg-body";
+    aBody.textContent = "Thinking...";
+    assistantDiv.appendChild(aBody);
+
+    chat.appendChild(assistantDiv);
+
+    try {
+
+        const response = await fetch(
+        `${API_BASE_URL}/chat`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type":
+                    "application/json"
+            },
+            body: JSON.stringify({
+                prompt: prompt
+            })
+        }
+    );
+
+    const data = await readJsonResponse(response);
+
+    aBody.textContent = data.answer || "";
+
+    if (data.route === "oecd_analysis") {
+        renderAnalysisCard(assistantDiv, data);
+    }
+
+    }
+    catch (err) {
+
+        aBody.textContent =
+            "ERROR - "
+            + (err instanceof Error ? err.message : String(err));
+    }
+
+    chat.scrollTop =
+        chat.scrollHeight;
+}
+
+document
+    .getElementById("prompt")
+    .addEventListener(
+        "keydown",
+        function(e) {
+
+            if (
+                e.key === "Enter" &&
+                !e.shiftKey
+            ) {
+
+                e.preventDefault();
+
+                sendMessage();
+            }
+        }
+    );
+
+</script>
+
+</body>
+</html>
