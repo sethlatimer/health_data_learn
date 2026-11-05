@@ -15,7 +15,7 @@ from database import (
 OLLAMA_EMBED_URL = "http://localhost:11434/api/embeddings"
 
 
-def embed_text(text, embedding_model="nomic-local"):
+def embed_text(text, embedding_model="nomic-embed-text"):
     response = requests.post(
         OLLAMA_EMBED_URL,
         json={
@@ -28,7 +28,7 @@ def embed_text(text, embedding_model="nomic-local"):
     return response.json()["embedding"]
 
 
-def embed_texts(texts, embedding_model="nomic-local", batch_size=32):
+def embed_texts(texts, embedding_model="nomic-embed-text", batch_size=32):
     if batch_size < 1:
         raise ValueError("batch_size must be greater than zero")
 
@@ -46,7 +46,7 @@ def embed_texts(texts, embedding_model="nomic-local", batch_size=32):
     return embeddings
 
 
-def generate_embedding(text, embedding_model="nomic-local"):
+def generate_embedding(text, embedding_model="nomic-embed-text"):
     return embed_text(text, embedding_model)
 
 
@@ -68,7 +68,7 @@ def search_dataset_concepts(
     query,
     dataset_id=None,
     top_k=10,
-    embedding_model="nomic-local",
+    embedding_model="nomic-embed-text",
     source=None,
     dataset_ids=None,
     instrumentation=None,
@@ -174,7 +174,7 @@ def search_dataset_concepts(
 
 def rank_dataset_candidates(
     query,
-    embedding_model="nomic-local",
+    embedding_model="nomic-embed-text",
     source=None,
     instrumentation=None,
 ):
@@ -303,7 +303,7 @@ def find_dataset_filters(
 def search_corpus(
     query,
     top_k=5,
-    embedding_model="nomic-local",
+    embedding_model="nomic-embed-text",
     include_oecd=True,
     scopes=None,
 ):
@@ -437,7 +437,7 @@ def search_document(
     document_id,
     query,
     top_k=5,
-    embedding_model="nomic-local",
+    embedding_model="nomic-embed-text",
 ):
     query_vector = generate_embedding(
         "search_query: " + query,
@@ -497,7 +497,7 @@ def search_document(
     return results[:top_k]
 
 
-def embed_document(document_id, embedding_model="nomic-local"):
+def embed_document(document_id, embedding_model="nomic-embed-text"):
     conn = connect()
     ensure_document_tables(conn)
 
@@ -556,7 +556,7 @@ def search_source_documents(
     dataset_id=None,
     document_id=None,
     measure_id=None,
-    embedding_model="nomic-local",
+    embedding_model="nomic-embed-text",
 ):
     if top_k < 1:
         raise ValueError("top_k must be greater than zero")
