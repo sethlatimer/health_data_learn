@@ -27,19 +27,20 @@ def chat():
         return jsonify({"error": "A non-empty prompt is required"}), 400
 
     try:
-        answer = agent.ask_corpus(prompt.strip())
+        # Get the evidence package
+        evidence_package = agent.ask_corpus(prompt.strip())
+        
+        # If it's already a structured response (like from OECD analysis), return as-is
+        if isinstance(evidence_package, dict) and "route" in evidence_package:
+            return jsonify(evidence_package)
+        
+        # Otherwise, we need to process the evidence package into a proper response
+        # For now, just return the answer directly for backward compatibility
+        return jsonify({"answer": evidence_package})
+        
     except Exception as error:
         app.logger.exception("Chat request failed")
         return jsonify({"error": str(error)}), 500
-
-    if isinstance(answer, dict):
-        response_data = {**answer}
-        response_data.setdefault("answer", None)
-    else:
-        response_data = {"answer": answer}
-
-    return jsonify(response_data)
-
 
 
 @app.post("/index")

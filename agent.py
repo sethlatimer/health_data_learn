@@ -11,6 +11,7 @@ from analysis import analyze_oecd_time_series
 from data_sources.oecd import OECDDataSource
 from data_sources.retrieval import DataSourceRetrieval
 from database import get_recent_messages, save_message
+from evidence_synthesis import build_evidence_package
 
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
