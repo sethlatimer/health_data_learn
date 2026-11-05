@@ -1,0 +1,15 @@
+{"id":"hospital-at-home","question":"Hospital at home interventions and acute hospital utilization outcomes","expected_any_terms":["hospital at home","hospitalization","acute care"]}
+{"id":"community-health-workers","question":"Community health worker interventions and healthcare utilization","expected_any_terms":["community health worker","utilization","healthcare"]}
+{"id":"remote-monitoring-diabetes","question":"Remote patient monitoring interventions and diabetes outcomes in adults","expected_any_terms":["remote monitoring","diabetes","glycemic"]}
+{"id":"avoidable-admissions","question":"Interventions to reduce avoidable hospital admissions","expected_any_terms":["avoidable admission","hospital admission","preventable"]}
+{"id":"primary-care-access","question":"Primary care access interventions and health outcomes","expected_any_terms":["primary care","access"]}
+{"id":"rural-access","question":"Rural healthcare access interventions and outcomes","expected_any_terms":["rural","access"]}
+{"id":"behavioral-health-integration","question":"Integrated behavioral health in primary care and patient outcomes","expected_any_terms":["behavioral health","integrated care"]}
+{"id":"food-as-medicine","question":"Food as medicine and food insecurity healthcare interventions","expected_any_terms":["food insecurity","food as medicine","nutrition"]}
+{"id":"medication-management","question":"Medication management interventions and hospital utilization","expected_any_terms":["medication management","medication","hospital"]}
+{"id":"care-management","question":"Care management programs and acute care utilization","expected_any_terms":["care management","utilization"]}
+{"id":"value-based-payment","question":"Value-based payment models in primary care and quality outcomes","expected_any_terms":["value-based","payment","primary care"]}
+{"id":"readmissions","question":"Interventions to reduce hospital readmissions","expected_any_terms":["readmission","hospital"]}
+{"id":"palliative-hospice","question":"Palliative care and hospice interventions and hospital utilization","expected_any_terms":["palliative","hospice","hospital"]}
+{"id":"telehealth","question":"Telehealth interventions and access or utilization outcomes","expected_any_terms":["telehealth","access"]}
+{"id":"null-conflicting-evidence","question":"Systematic reviews of interventions with null or conflicting effects on acute healthcare utilization","expected_any_terms":["systematic review","null","conflicting","utilization"]}
