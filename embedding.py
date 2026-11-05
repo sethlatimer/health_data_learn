@@ -16,6 +16,8 @@ OLLAMA_EMBED_URL = "http://localhost:11434/api/embed"
 
 
 def embed_text(text, embedding_model="nomic-embed-text"):
+    if embedding_model == "nomic-local":
+        embedding_model = "nomic-embed-text"
     response = requests.post(
         OLLAMA_EMBED_URL,
         json={
