@@ -25,24 +25,14 @@ def embed_text(text, embedding_model="nomic-embed-text"):
         timeout=300,
     )
     response.raise_for_status()
+    # Pull the first array item explicitly out of the outer 2D embeddings matrix
     return response.json()["embeddings"][0]
 
 
 def embed_texts(texts, embedding_model="nomic-embed-text", batch_size=32):
-    if batch_size < 1:
-        raise ValueError("batch_size must be greater than zero")
-
-    texts = list(texts)
     embeddings = []
-    
-    # Process texts in batches
-    for i in range(0, len(texts), batch_size):
-        batch = texts[i:i + batch_size]
-        # Make sequential requests for each text in the batch
-        for text in batch:
-            embedding = embed_text(text, embedding_model)
-            embeddings.append(embedding)
-
+    for text in texts:
+        embeddings.append(embed_text(text, embedding_model))
     return embeddings
 
 
