@@ -1,12 +1,10 @@
 from pathlib import Path
 
 from flask import Flask, jsonify, request, send_file
-from flask_cors import CORS
 
 from agent import Agent
 
 app = Flask(__name__)
-CORS(app)
 
 agent = Agent()
 
