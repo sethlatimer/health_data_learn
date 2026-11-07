@@ -2,6 +2,7 @@ from pathlib import Path
 
 from flask import Flask, jsonify, request, send_file
 
+from config import get_settings
 from agent import Agent
 
 app = Flask(__name__)
@@ -45,9 +46,7 @@ def chat():
 @app.post("/index")
 def index_corpus():
     try:
-        report = agent.index_folder(
-            "/var/home/seth/health_data_learn/corpus"
-        )
+        report = agent.index_folder(str(get_settings().corpus_dir))
 
         return jsonify(report)
 
@@ -58,9 +57,15 @@ def index_corpus():
         }), 500
 
 
-if __name__ == "__main__":
+def main():
+    settings = get_settings()
     app.run(
-        host="0.0.0.0",
-        port=5000,
-        debug=True
+        host=settings.host,
+        port=settings.port,
+        debug=settings.debug,
     )
+
+
+if __name__ == "__main__":
+    main()
+

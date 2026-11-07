@@ -1,8 +1,10 @@
 from pathlib import Path
+
+from config import get_settings
 from pypdf import PdfReader
 
 
-ALLOWED_ROOT = Path(r"C:\Temp").resolve()
+ALLOWED_ROOT = get_settings().allowed_file_root
 
 TEXT_EXTENSIONS = {
     ".txt",

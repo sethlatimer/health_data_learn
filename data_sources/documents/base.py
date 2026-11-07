@@ -12,6 +12,7 @@ import requests
 
 import database
 import embedding
+from config import get_settings
 from tools import chunk_text, read_pdf
 
 
@@ -297,7 +298,7 @@ class DocumentIngestionService:
     def __init__(
         self,
         sources=None,
-        cache_root=r"C:\Temp\public_documents",
+        cache_root=None,
         embedding_model="nomic-local",
     ):
         if sources is None:
@@ -314,7 +315,11 @@ class DocumentIngestionService:
             key.upper(): value
             for key, value in (sources or {}).items()
         }
-        self.cache_root = Path(cache_root).resolve()
+        self.cache_root = (
+            get_settings().document_cache_dir
+            if cache_root is None
+            else Path(cache_root).expanduser().resolve()
+        )
         self.embedding_model = embedding_model
 
     def discover(self, source=None, dataset_id=None, limit=None):

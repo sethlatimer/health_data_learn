@@ -1,0 +1,23 @@
+.aider*
+
+# Python-generated files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+agent.db
+agent.db-*
+
+# Downloaded public-document cache (including the pre-config POSIX artifact)
+/public_documents/
+/data/public_documents/
+/C:\\Temp\\public_documents/
+
+# Local environment overrides
+.env
+!.env.example
+

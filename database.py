@@ -2,7 +2,9 @@ import json
 import sqlite3
 import time
 
-DB = "agent.db"
+from config import PROJECT_ROOT, get_settings
+
+DB = str(get_settings().database_path)
 
 
 def connect():
@@ -1181,8 +1183,9 @@ def initialize():
 
     conn = connect()
 
-    with open("schema.sql", "r") as f:
-        conn.executescript(f.read())
+    schema_path = PROJECT_ROOT / "schema.sql"
+    with schema_path.open("r", encoding="utf-8") as schema_file:
+        conn.executescript(schema_file.read())
 
     ensure_document_tables(conn)
     ensure_literature_tables(conn)

@@ -1,4 +1,4 @@
-import sqlite3
+import database
 from pathlib import Path
 
 from database import save_document, save_document_chunk
@@ -76,13 +76,16 @@ def index_folder(
         else folder_path.glob("*.pdf")
     )
 
-    with sqlite3.connect("agent.db") as conn:
+    connection = database.connect()
+    try:
         existing_paths = {
             row[0]
-            for row in conn.execute(
+            for row in connection.execute(
                 "SELECT file_path FROM documents"
             ).fetchall()
         }
+    finally:
+        connection.close()
 
     report = {
         "folder": str(folder_path),

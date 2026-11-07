@@ -969,6 +969,26 @@ class RetrievalBenchmarkTests(unittest.TestCase):
                         for candidate in trace["stage_1_dataset_candidates"]
                     ))
 
+    def test_dataset_ranking_accepts_legacy_local_embedding_name(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch.object(database, "DB", f"{temp_dir}/agent.db"):
+                for profile in BENCHMARK_PROFILES[:2]:
+                    database.save_dataset_concepts(profile["concepts"])
+
+                metrics = {}
+                with patch(
+                    "embedding.embed_text",
+                    return_value=[1.0, 0.0],
+                ):
+                    ranked = embedding.rank_dataset_candidates(
+                        "inpatient hospital utilization",
+                        source="BENCH",
+                        instrumentation=metrics,
+                    )
+
+        self.assertEqual(len(ranked), 2)
+        self.assertEqual(metrics["vectors_compared"], 2)
+
     def test_trace_reports_retrieval_timings_and_vector_counts(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             with patch.object(database, "DB", f"{temp_dir}\\agent.db"):
